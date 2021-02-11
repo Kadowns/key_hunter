@@ -7,10 +7,11 @@
 #include <filesystem>
 
 #include <rapidjson/document.h>
+#include <rapidjson/prettywriter.h>
 
 int main(int argc, char *argv[]) {
 
-    std::string keysPath, targetPath;
+    std::string keysPath, targetPath, outputFilename;
 
     try {
         for (int i = 0; i < argc; ++i) {
@@ -19,10 +20,29 @@ int main(int argc, char *argv[]) {
             } else if (strcmp(argv[i], "-t") == 0) {
                 targetPath = argv[i + 1];
             }
+            else if (strcmp(argv[i], "-o") == 0){
+                outputFilename = argv[i + 1];
+            }
         }
     } catch (const std::exception& e){
         std::cout << "Failed to parse arguments" << e.what() << std::endl;
         return 1;
+    }
+
+    if (keysPath.empty()){
+        std::cout << "No keys path provided (-k path), closing..." << std::endl;
+        return 1;
+    }
+    else {
+        std::cout << "Key path provided: " << keysPath << std::endl;
+    }
+
+    if (targetPath.empty()){
+        std::cout << "No target path provided (-t path), closing..." << std::endl;
+        return 1;
+    }
+    else {
+        std::cout << "Target path provided: " << targetPath << std::endl;
     }
 
     std::cout << "keys path: " << keysPath << std::endl << "target path" << targetPath << std::endl;
@@ -43,9 +63,12 @@ int main(int argc, char *argv[]) {
     rapidjson::Document keysJson;
     keysJson.Parse(content.c_str());
 
+    rapidjson::Document filteredKeysJson;
+    filteredKeysJson.SetObject();
+
+
     std::map<std::string, int> foundKeys;
     std::set<std::string> notFoundKeys;
-
 
     for (auto it = keysJson.MemberBegin(); it != keysJson.MemberEnd(); it++){
         std::string key = it->name.GetString();
@@ -56,6 +79,7 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     foundKeys[key] = 1;
+                    filteredKeysJson.AddMember(it->name, it->value, filteredKeysJson.GetAllocator());
                 }
             }
         }
@@ -74,7 +98,23 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Keys found: " << foundKeys.size() << std::endl;
     std::cout << "Keys not found: " << notFoundKeys.size() << std::endl;
-    std::cout << "Total keys: " << keysJson.MemberCount() << std::endl;
+    std::cout << "Total before keys: " << keysJson.MemberCount() << std::endl;
+    std::cout << "Total after keys: " << filteredKeysJson.MemberCount() << std::endl;
+
+
+    if (!outputFilename.empty()){
+        std::cout << "Saving filtered json to " << outputFilename << std::endl;
+        rapidjson::StringBuffer sb;
+        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+        filteredKeysJson.Accept(writer);
+
+        std::ofstream out(outputFilename);
+        out << sb.GetString();
+        out.close();
+    }
+    else {
+        std::cout << "No output filename provided (-o filename)" << std::endl;
+    }
 
     return 0;
 }
