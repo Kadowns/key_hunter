@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
     std::map<std::string, int> foundKeys;
     std::set<std::string> notFoundKeys;
 
+
     for (auto it = keysJson.MemberBegin(); it != keysJson.MemberEnd(); it++){
         std::string key = it->name.GetString();
         for (auto& file : files){
@@ -73,6 +74,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Keys found: " << foundKeys.size() << std::endl;
     std::cout << "Keys not found: " << notFoundKeys.size() << std::endl;
+    std::cout << "Total keys: " << keysJson.MemberCount() << std::endl;
 
     return 0;
 }
